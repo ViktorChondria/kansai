@@ -17,8 +17,9 @@ S character WITH default ON left # show character with sprite as defined above
 D character : dialogue continues until EOL but can be broken up with \n literal.
 D character : this continues until the end of the scene
 J jmp_to # jump unconditional
-JE var_name value scene_2 # jump if equal
-JE var_name value $var_2 # $ prefix is for variables in comparisons
+E var_name value scene_2 # jump if equal (comparison)
+# variables are the result of a choice from a scene and are $scene_name
+E var_name value $var_2 # $ prefix is for variables in comparisons
 C choices jmp_to ; choice2 jmp_to_different
 ENDSCENE # scenes cannot be nested
 
