@@ -48,7 +48,7 @@ struct env_t *initGameEngine() {
         error("ERROR: Could not initialize SDL surface.");
         exit(1);
     }
-
+    
     return env;
 }
 
@@ -61,6 +61,45 @@ void exitEngine(struct env_t *env) {
     free(env);
 }
 
+/* reset the window to blank white */
+void clearWindow(SDL_Surface *surface) {
+    SDL_FillRect(surface,
+                 NULL,
+                 SDL_MapRGB(surface->format, 255, 255, 255));
+}
+
+/*
+  main function for the engine
+  return 1 on error, 0 on success.
+*/
+void engineMain(struct env_t *env) {
+    int engine_running = 1;
+    int initTick;
+    SDL_Event event;
+    while (engine_running) {
+        initTick = SDL_GetTicks();
+        
+        clearWindow(env->surface);
+
+        // refresh the window
+        SDL_UpdateWindowSurface(env->window);
+
+        // poll for SDL events.
+        while(SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                engine_running = 0;
+            }
+        }
+
+        // sync the frames
+        int deltaTime = SDL_GetTicks() - initTick;
+        if ((1000 / MAX_FRAMES) > deltaTime) {
+            SDL_Delay((1000 / MAX_FRAMES) - deltaTime);
+        }
+    }
+
+}
+
 int main(int argc, char **argv) {
     if (SDL_INIT_EVERYTHING < 0) {
         error("ERROR: Could not start SDL.");
@@ -68,6 +107,7 @@ int main(int argc, char **argv) {
     }
 
     struct env_t *env = initGameEngine();
+    engineMain(env);
     
     return 0;
 }
