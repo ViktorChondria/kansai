@@ -29,17 +29,24 @@ struct archive_t *parseHeader(char *filename) {
     archive->assets = malloc(sizeof(struct asset_t) * archive->assetCount);
 
     /* allocate enough space to read the rest of the header */
-    headerSize = assetCount * (HASH_SIZE + ARCHIVE_PADDING) + FILE_OFFSET;
+    headerSize = assetCount * (HASH_SIZE + ARCHIVE_PADDING + FILE_OFFSET)
     buf = malloc(sizeof(uint8_t) * headerSize);
+    /* file pointer ought to already be incremented past the header. */
     fgets((char *) buf, headerSize, (FILE *) fp);
 
-    for (uint16_t i = 0; i < assetCount; i++) {
-        uint32_t assetOffset = (i * (HASH_SIZE + ARCHIVE_PADDING)) + FILE_OFFSET;
+    for (uint16_t i = 0; i < assetCount; i+= ARCHIVE_PADDING) {
+        uint32_t assetOffset = (i * (HASH_SIZE + ARCHIVE_PADDING + FILE_OFFSET));
         struct asset_t asset;
         
-        asset.offset = assetOffset;
         asset.hash = malloc(sizeof(uint8_t) * 16);
         memcpy(asset.hash, buf + assetOffset, (size_t) 16);
+
+        /* read the four bytes of the file offset. */
+        asset.offset =
+            (buf[assetOffset + 16] << 24)     |
+            (buf[assetOffset + 16 + 1] << 16) |
+            (buf[assetOffset + 16 + 2] << 8)  |
+            (buf[assetOffset + 16 + 3]);
 
         archive->assets[i] = asset;
     }
@@ -47,4 +54,9 @@ struct archive_t *parseHeader(char *filename) {
     free(buf);
     
     return archive;
+}
+
+/* release the hefty resources reserved by the header. */
+void freeHeader(struct archive_t *archive) {
+    // TODO.
 }
