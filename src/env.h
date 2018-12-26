@@ -2,11 +2,11 @@
 #ifndef _KANSAI_ENV_
 #define _KANSAI_ENV_
 
-struct env_t {
+typedef struct {
     SDL_Surface *surface;
     SDL_Window *window;
-};
+} env_t ;
 
-struct env_t *createEnvironment();
+env_t *createEnvironment();
 
 #endif

@@ -6,8 +6,8 @@
 
 #include "env.h"
 #include "entity.h"
-void clearWindow(struct env_t *env);
+void clearWindow(env_t *env);
 /* TODO: cache loaded files. */
-void drawSprite(struct env_t *env, struct entity_t *entity);
+void drawSprite(env_t *env, entity_t *entity);
 
 #endif
