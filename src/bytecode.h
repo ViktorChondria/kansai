@@ -1,13 +1,29 @@
-#ifndef __KANSAI_KBC
-#define __KANSAI_KBC
+#ifndef _KANSAI_KBC_
+#define _KANSAI_KBC_
 
 #include <stdint.h>
 
+#define MAX_OPCODE 9
 #define DEFAULT_DOT_ENTRIES 100
 
 /*
   Global Asset Table (GAT) datastructure
 */
+
+/* opcodes to remove the otherwise abundant magic numbers */
+typedef enum {
+              OP_NOOP,
+              OP_EXIT,
+              OP_JMP,
+              OP_JE,
+              OP_DISPLAYTEXT,
+              OP_DISPLAYIMAGE,
+              OP_PLAYSOUND,
+              OP_USEROPTION,
+              OP_OPTIONSEPERATOR, // NOT OPCODE -> SEPARATES OPTIONS.
+              OP_CMP,
+              OP_LOADAOT
+} opcode;
 
 typedef struct {
     /* array of literal representation of strings as used by the engine */
@@ -46,7 +62,10 @@ typedef struct {
 
 /* TODO: Load save data into the DOT */
 script_t *initEnv();
-script_t *loadScript(script_t *env, uint8_t *file);
+script_t *loadScript(script_t *env, uint8_t *file, size_t fileSize);
 void executeScript(script_t *env);
+
+/* opcode function pointer for dispatch table */
+typedef script_t *(*opcode_t)(script_t *);
 
 #endif

@@ -28,6 +28,8 @@
   At any time, the comparison instruction can go in and branch based on previous
   decisions. This is called the Decision Offset Table (DOT).
 
+  For interpreter implementation reasons, all opcodes increment from 0 because they
+  have an O(1) lookup time.
 
   INSTRUCTION SET
   ===============
@@ -35,23 +37,23 @@
   01 - Begin data section
   02 - end data section
   03 - begin code section.
-  04 - End script (return to engine execution)
   -- CODE SECTION SPECIFIC --
-  07 - unconditional jump (takes 4 bytes as an operand -- code spot to jump to)
-  08 - jump if comparison flag is true (takes 4 bytes as an operand)
-  10 - display text at GAT offset (takes 3 bytes as operand 2:offset;1:flags)
-  11 - display image at GAT offset (takes 3 bytes as operand 2:offset;1:flags)
-  12 - play sound at GAT offset (takes 3 bytes as operand 2:offset;1:flags)
-  1F - get user input on option (takes n bytes as input with 2 for each GAT offset)
-  30 - after 2 bytes in a user option indicates a new optionn
-  20 - compare an option at DOT offset to a value (4 bytes -- offset;value)
-  21 - Load assets from x until y into AOT (4 bytes -- x;y)
+  00 - unconditional jump (takes 4 bytes as an operand -- code spot to jump to)
+  01 - End script (return to engine execution)
+  02 - jump if comparison flag is true (takes 4 bytes as an operand)
+  03 - display text at GAT offset (takes 3 bytes as operand 2:offset;1:flags)
+  04 - display image at GAT offset (takes 3 bytes as operand 2:offset;1:flags)
+  05 - play sound at GAT offset (takes 3 bytes as operand 2:offset;1:flags)
+  06 - get user input on option (takes n bytes as input with 2 for each GAT offset)
+  07 - after 2 bytes in a user option indicates a new optionn
+  08 - compare an option at DOT offset to a value (4 bytes -- offset;value)
+  09 - Load assets from x until y into AOT (4 bytes -- x;y)
   -- DATA SECTION SPECIFIC --
-  0F - begin asset set
-  1F - end asset set
-  10 - load string into current asset set (continues reading until null-byte)
-  11 - load png file based on filename (continues reading until null-byte)
-  12 - load ogg file based on filename (continues reading until null-byte)
+  00 - begin asset set
+  01 - end asset set
+  02 - load string into current asset set (continues reading until null-byte)
+  03 - load png file based on filename (continues reading until null-byte)
+  04 - load ogg file based on filename (continues reading until null-byte)
   
 
   An example bytecode script:
@@ -73,13 +75,32 @@
     EXIT               ;; exit script    
 */
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "bytecode.h"
 
 #define FREEGAT(_entry) \
     for (int i=0; _entry[i] != NULL; i++) { \
         free(_entry[i]); \
     }
-    
+
+/* opcode for no operation. */
+static script_t *noop(script_t *env) {
+    return env;
+}
+
+opcode_t executionDispatchTable[] =
+    {
+     &noop,
+     &noop,
+     &noop,
+     &noop,
+     &noop,
+     &noop,
+     &noop,
+     &noop,
+     &noop
+    };
 
 script_t *initEnv() {
     script_t *env = malloc(sizeof(script_t));
@@ -100,14 +121,25 @@ script_t *initEnv() {
     return env;
 }
 
-script_t *loadScript(script_t *env, uint8_t *file) {
+script_t *loadScript(script_t *env, uint8_t *file, size_t fileSize) {
+    env->code = malloc(sizeof(uint8_t) * fileSize);
+    memcpy(env->code, file, fileSize);
     return env;
 }
 
 void executeScript(script_t *env) {
-    /* cleanup */
-    env->ip = 0; /* reset execution context */
-
+    /* execute instructions (opcodes modify IP) */
+    for (env->ip = 0; env->code[env->ip] != OP_EXIT; env->ip++) {
+        if (env->code[env->ip] < MAX_OPCODE) {
+            printf("%x:%x\n", env->code[env->ip], env->ip);
+            env = executionDispatchTable[env->code[env->ip]](env);
+        }
+    }
+    /* clean exit with exit opcode */
+    if (env->code[env->ip] != OP_EXIT) {
+        
+    }
+    
     if (env->data) free(env->data);
     if (env->code) free(env->code);
     

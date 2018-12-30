@@ -1,17 +1,13 @@
+#include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
-#include "env.h"
-#include "state.h"
-#include "window.h"
-#include "archive.h"
+#include "bytecode.h"
 
 int main(int argc, char **argv) {
-
-    env_t *env = createEnvironment();
-    int game_running = 1;
-    while (game_running) {
-        /* update the current state */
-        //state->update(env, state);
-        clearWindow(env);
-    }
+    script_t *env = initEnv();
+    uint8_t test[] = {0, 0, 0, 0, 0, 0, 0, 1};
+    env = loadScript(env, test, 8);
+    executeScript(env);
+    return 0;
 }
