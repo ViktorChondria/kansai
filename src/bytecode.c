@@ -77,7 +77,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
 #include "bytecode.h"
+#include "error.h"
 
 #define FREEGAT(_entry) \
     for (int i=0; _entry[i] != NULL; i++) { \
@@ -128,16 +130,24 @@ script_t *loadScript(script_t *env, uint8_t *file, size_t fileSize) {
 }
 
 void executeScript(script_t *env) {
+    error_t err = ERROR_NONE;
+    
     /* execute instructions (opcodes modify IP) */
     for (env->ip = 0; env->code[env->ip] != OP_EXIT; env->ip++) {
         if (env->code[env->ip] < MAX_OPCODE) {
             printf("%x:%x\n", env->code[env->ip], env->ip);
             env = executionDispatchTable[env->code[env->ip]](env);
+        } else { /* opcode is out of range */
+            err = ERROR_INVALID_OPCODE;
+            break;
         }
     }
     /* clean exit with exit opcode */
-    if (env->code[env->ip] != OP_EXIT) {
+    if (err == ERROR_NONE) {
         
+    } else { /* exception case */
+        logError("SCRIPT", err, NULL);
+        exit(1);
     }
     
     if (env->data) free(env->data);

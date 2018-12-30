@@ -60,6 +60,7 @@ typedef struct {
     uint32_t ip; /* instruction pointer */
 } script_t;
 
+
 /* TODO: Load save data into the DOT */
 script_t *initEnv();
 script_t *loadScript(script_t *env, uint8_t *file, size_t fileSize);
