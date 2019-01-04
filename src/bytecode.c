@@ -41,9 +41,9 @@
   00 - unconditional jump (takes 4 bytes as an operand -- code spot to jump to)
   01 - End script (return to engine execution)
   02 - jump if comparison flag is true (takes 4 bytes as an operand)
-  03 - display text at GAT offset (takes 3 bytes as operand 2:offset;1:flags)
-  04 - display image at GAT offset (takes 3 bytes as operand 2:offset;1:flags)
-  05 - play sound at GAT offset (takes 3 bytes as operand 2:offset;1:flags)
+  03 - display text at GAT offset (takes 5 bytes as operand 2:offset;2:length;1:flags)
+  04 - display image at GAT offset (takes 5 bytes as operand 2:offset;2:length;1:flags)
+  05 - play sound at GAT offset (takes 5 bytes as operand 2:offset;2:length;1:flags)
   06 - get user input on option (takes n bytes as input with 2 for each GAT offset)
   07 - after 2 bytes in a user option indicates a new optionn
   08 - compare an option at DOT offset to a value (4 bytes -- offset;value)
@@ -80,28 +80,94 @@
 
 #include "bytecode.h"
 #include "error.h"
+#include "log.h"
 
 #define FREEGAT(_entry) \
     for (int i=0; _entry[i] != NULL; i++) { \
         free(_entry[i]); \
     }
 
+static inline uint8_t getNextOpcode(script_t *env) {
+    if (env->code[env->ip] != OP_EXIT)
+        return env->code[++env->ip];
+    return OP_NOOP;
+}
+
+/*
+  Opcode definitions
+*/
+
 /* opcode for no operation. */
-static script_t *noop(script_t *env) {
+inline static script_t *noop(script_t *env) {
+    debug("noop");
     return env;
 }
 
+inline static script_t *jump(script_t *env) {
+    uint32_t address;
+    
+    /* build address from 4 operands */
+    address  = getNextOpcode(env) << 24;
+    address |= getNextOpcode(env) << 16;
+    address |= getNextOpcode(env) << 8;
+    address |= getNextOpcode(env);
+    
+    /* move instruction pointer to new address */
+    env->ip = address;
+    debug("Jump to %d", address);
+    return env;
+}
+
+inline static script_t *jumpOnEqual(script_t *env) {
+    if (env->cmpFlag) {
+        return jump(env);
+    }
+    return env;
+}
+
+inline static script_t *displayText(script_t *env) {
+    uint16_t gatOffset;
+    uint16_t len;
+    uint8_t flags;
+
+    gatOffset = getNextOpcode(env) << 8 | getNextOpcode(env);
+    len = getNextOpcode(env) << 8 | getNextOpcode(env);
+    flags = getNextOpcode(env);
+
+    debug("Display text @%d with a length of %d with flags %d",
+          gatOffset, len, flags);
+    
+    return env;
+}
+
+inline static script_t *displayImg(script_t *env) {
+    return env;
+}
+
+inline static script_t *playSound(script_t *env) {
+    return env;
+}
+
+inline static script_t *getUserDecision(script_t *env) {
+    return env;
+}
+
+inline static script_t *loadAssets(script_t *env) {
+    return env;
+}
+
+/* jump table for all runtime opcodes */
 opcode_t executionDispatchTable[] =
     {
+     &jump,
      &noop,
-     &noop,
-     &noop,
-     &noop,
-     &noop,
-     &noop,
-     &noop,
-     &noop,
-     &noop
+     &jumpOnEqual,
+     &displayText,
+     &displayImg,
+     &playSound,
+     &getUserDecision,
+     &noop, // separator
+     &loadAssets,
     };
 
 script_t *initEnv() {
@@ -119,6 +185,8 @@ script_t *initEnv() {
     env->code = NULL;
 
     env->ip = 0;
+
+    env->cmpFlag = 0;
     
     return env;
 }
@@ -126,6 +194,7 @@ script_t *initEnv() {
 script_t *loadScript(script_t *env, uint8_t *file, size_t fileSize) {
     env->code = malloc(sizeof(uint8_t) * fileSize);
     memcpy(env->code, file, fileSize);
+    env->scriptLength = fileSize;
     return env;
 }
 
@@ -134,9 +203,13 @@ void executeScript(script_t *env) {
     
     /* execute instructions (opcodes modify IP) */
     for (env->ip = 0; env->code[env->ip] != OP_EXIT; env->ip++) {
+        if (env->ip < env->scriptLength) {
+            err = ERROR_IP_OUT_OF_RANGE;
+        }
         if (env->code[env->ip] < MAX_OPCODE) {
-            printf("%x:%x\n", env->code[env->ip], env->ip);
+            debug("%d:%d", env->ip, env->code[env->ip]);
             env = executionDispatchTable[env->code[env->ip]](env);
+            //debug("%d:%d", env->ip, env->code[env->ip]);
         } else { /* opcode is out of range */
             err = ERROR_INVALID_OPCODE;
             break;

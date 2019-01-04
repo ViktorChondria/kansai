@@ -6,8 +6,8 @@
 
 int main(int argc, char **argv) {
     script_t *env = initEnv();
-    uint8_t test[] = {0, 0, 0, 0, 0, 100, 0, 1};
-    env = loadScript(env, test, 8);
+    uint8_t test[] = {00, 00, 00, 00, 04, 03, 00, 00, 00, 00, 00, 01};
+    env = loadScript(env, test, 6);
     executeScript(env);
     return 0;
 }

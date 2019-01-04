@@ -9,7 +9,8 @@
 typedef enum {
               ERROR_NONE,
               ERROR_UNKNOWN,
-              ERROR_INVALID_OPCODE
+              ERROR_INVALID_OPCODE,
+              ERROR_IP_OUT_OF_RANGE
 } error_t;
 /*
   context is an all caps string to make logs more logical

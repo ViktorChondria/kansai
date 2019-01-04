@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define MAX_OPCODE 9
+#define MAX_OPCODE 10
 #define DEFAULT_DOT_ENTRIES 100
 
 /*
@@ -58,6 +58,10 @@ typedef struct {
     uint8_t *code;
     /* execution context */
     uint32_t ip; /* instruction pointer */
+    /* was the last comparison a success */
+    uint8_t cmpFlag;
+    /* length of current script */
+    uint64_t scriptLength;
 } script_t;
 
 
