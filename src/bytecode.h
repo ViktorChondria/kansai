@@ -5,6 +5,8 @@
 
 #define MAX_OPCODE 10
 #define DEFAULT_DOT_ENTRIES 100
+#define DEFAULT_OPTIONS 4 /* I find it very unlikely we'll see more than 4. */
+#define MAX_OPT_LENGTH 1024
 
 /*
   Global Asset Table (GAT) datastructure

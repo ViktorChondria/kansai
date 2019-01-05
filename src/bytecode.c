@@ -45,9 +45,10 @@
   04 - display image at GAT offset (takes 5 bytes as operand 2:offset;2:length;1:flags)
   05 - play sound at GAT offset (takes 5 bytes as operand 2:offset;2:length;1:flags)
   06 - get user input on option (takes n bytes as input with 2 for each GAT offset)
+       max text length is defined as MAX_OPT_LENGTH in bytecode.h
   07 - after 2 bytes in a user option indicates a new optionn
   08 - compare an option at DOT offset to a value (4 bytes -- offset;value)
-  09 - Load assets from x until y into AOT (4 bytes -- x;y)
+  09 - Load assets from x until y into AOT (8 bytes -- x;y)
   -- DATA SECTION SPECIFIC --
   00 - begin asset set
   01 - end asset set
@@ -82,13 +83,24 @@
 #include "error.h"
 #include "log.h"
 
-#define FREEGAT(_entry) \
+#define FREEGAT(_entry)                     \
     for (int i=0; _entry[i] != NULL; i++) { \
-        free(_entry[i]); \
+        free(_entry[i]);                    \
     }
 
+#define OP32(env)                  \
+    (getNextOpcode(env) << 24) |   \
+    (getNextOpcode(env) << 16) |   \
+    (getNextOpcode(env) << 8)  |   \
+    (getNextOpcode(env))
+
+#define OP16(env)                 \
+    (getNextOpcode(env) << 8) |   \
+    (getNextOpcode(env))
+
+
 static inline uint8_t getNextOpcode(script_t *env) {
-    if (env->code[env->ip] != OP_EXIT)
+    if (env->ip < env->scriptLength)
         return env->code[++env->ip];
     return OP_NOOP;
 }
@@ -105,12 +117,8 @@ inline static script_t *noop(script_t *env) {
 
 inline static script_t *jump(script_t *env) {
     uint32_t address;
-    
-    /* build address from 4 operands */
-    address  = getNextOpcode(env) << 24;
-    address |= getNextOpcode(env) << 16;
-    address |= getNextOpcode(env) << 8;
-    address |= getNextOpcode(env);
+
+    address = OP32(env);
     
     /* move instruction pointer to new address */
     env->ip = address;
@@ -130,9 +138,9 @@ inline static script_t *displayText(script_t *env) {
     uint16_t len;
     uint8_t flags;
 
-    gatOffset = getNextOpcode(env) << 8 | getNextOpcode(env);
-    len = getNextOpcode(env) << 8 | getNextOpcode(env);
-    flags = getNextOpcode(env);
+    gatOffset = OP16(env);
+    len       = OP16(env);
+    flags     = getNextOpcode(env);
 
     debug("Display text @%d with a length of %d with flags %d",
           gatOffset, len, flags);
@@ -141,18 +149,62 @@ inline static script_t *displayText(script_t *env) {
 }
 
 inline static script_t *displayImg(script_t *env) {
+    uint16_t gatOffset;
+    uint16_t len;
+    uint8_t flags;
+
+    gatOffset = OP16(env);
+    len       = OP16(env);
+    flags     = getNextOpcode(env);
+
+
+    debug("Display image @%d with a length of %d with flags %d",
+          gatOffset, len, flags);
+    
     return env;
 }
 
 inline static script_t *playSound(script_t *env) {
+    uint16_t gatOffset;
+    uint16_t len;
+    uint8_t flags;
+
+    gatOffset = OP16(env);
+    len       = OP16(env);
+    flags     = getNextOpcode(env);
+
+
+    debug("Play sound @%d with a length of %d with flags %d",
+          gatOffset, len, flags);
+    
     return env;
 }
 
 inline static script_t *getUserDecision(script_t *env) {
+    /* buffer for options */
+    char **options = malloc(sizeof(char) * MAX_OPT_LENGTH * DEFAULT_OPTIONS);
+    uint8_t stringIndex = 0;
+    uint8_t charIndex = 0;
+    for (uint8_t op = getNextOpcode(env); op != 0x00; op = getNextOpcode(env), charIndex++) {
+        options[stringIndex][charIndex]
+    }
+
+    free(options);
+    
     return env;
 }
 
 inline static script_t *loadAssets(script_t *env) {
+    uint32_t startAddress;
+    uint32_t endAddress;
+
+    startAddress = OP32(env);
+    endAddress   = OP32(env);
+
+    debug("Load assets into AOT from 0x%x-0x%x", startAddress, endAddress);
+
+    /* TODO parse loaded memory */
+    
     return env;
 }
 
@@ -200,16 +252,15 @@ script_t *loadScript(script_t *env, uint8_t *file, size_t fileSize) {
 
 void executeScript(script_t *env) {
     error_t err = ERROR_NONE;
-    
     /* execute instructions (opcodes modify IP) */
     for (env->ip = 0; env->code[env->ip] != OP_EXIT; env->ip++) {
-        if (env->ip < env->scriptLength) {
+        if (env->ip > env->scriptLength) {
             err = ERROR_IP_OUT_OF_RANGE;
+            debug("%d", env->ip);
+            break;
         }
         if (env->code[env->ip] < MAX_OPCODE) {
-            debug("%d:%d", env->ip, env->code[env->ip]);
             env = executionDispatchTable[env->code[env->ip]](env);
-            //debug("%d:%d", env->ip, env->code[env->ip]);
         } else { /* opcode is out of range */
             err = ERROR_INVALID_OPCODE;
             break;
