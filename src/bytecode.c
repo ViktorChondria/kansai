@@ -182,11 +182,12 @@ inline static script_t *playSound(script_t *env) {
 
 inline static script_t *getUserDecision(script_t *env) {
     /* buffer for options */
+    // TODO.
     char **options = malloc(sizeof(char) * MAX_OPT_LENGTH * DEFAULT_OPTIONS);
     uint8_t stringIndex = 0;
     uint8_t charIndex = 0;
     for (uint8_t op = getNextOpcode(env); op != 0x00; op = getNextOpcode(env), charIndex++) {
-        options[stringIndex][charIndex]
+        //options[stringIndex][charIndex]
     }
 
     free(options);
