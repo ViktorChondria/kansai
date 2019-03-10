@@ -4,8 +4,8 @@
 #include "log.h"
 
 
-struct env_t *createEnvironment() {
-    struct env_t *env = malloc(sizeof(struct env_t));
+env_t *createEnvironment() {
+    env_t *env = malloc(sizeof(env_t));
     
     env->surface = NULL;
     env->window = NULL;

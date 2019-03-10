@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "env.h"
 
+typedef struct entity_ entity_t;
+
 /*
   In Kansai, entities are a somewhat abstract concept. For the sake of
   logical simplicity, they're basically just implemented as `objects'
@@ -15,7 +17,7 @@
   be functions like `spawnBasicEnemy()' that will populate this struct
   and will return a pointer that can be called into by the state.
 */
-struct entity_t {
+struct entity_{
     /* screen position. */
     uint32_t x;
     uint32_t y;
@@ -29,7 +31,7 @@ struct entity_t {
     SDL_Rect destRect;
     /* update function for entities are kinda simulating OOP
        just for logical simplicity */
-    uint32_t (*update)(struct env_t *env, struct entity_t *this);
+    uint32_t (*update)(env_t *env, entity_t *this);
 };
 
 #endif
