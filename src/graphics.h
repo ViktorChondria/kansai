@@ -3,6 +3,8 @@
 
 #include <SDL2/SDL.h>
 
+#define MAX_FRAMES 60
+
 #define WIDTH 800
 #define HEIGHT 600
 
@@ -20,8 +22,8 @@
 #define S_TEXT_W WIDTH
 #define S_TEXT_H S_TEXT_Y
 
-#define S_CHAR_LEFT_X 0 /* TODO */
-#define S_CHAR_LEFT_Y 0
+#define S_CHAR_LEFT_X 200 /* TODO */
+#define S_CHAR_LEFT_Y 200
 
 #define S_CHAR_CENTER_X 0
 #define S_CHAR_CENTER_Y 0
@@ -29,8 +31,8 @@
 #define S_CHAR_RIGHT_X 0
 #define S_CHAR_RIGHT_Y 0
 
-#define S_CHAR_W 50 /* TODO */
-#define S_CHAR_H 50
+#define S_CHAR_W 300 /* TODO */
+#define S_CHAR_H 500
 
 
 void setupWindow();
@@ -41,6 +43,7 @@ void drawWindow();
 
 void drawCoreSurface(SDL_Surface *surface, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 void loadCoreSurface(SDL_Surface **sprite, char *filename);
+void loadLeftChar(char *filename);
 
 
 #endif

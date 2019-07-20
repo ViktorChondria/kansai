@@ -183,3 +183,23 @@ void loadCoreSurface(SDL_Surface **sprite, char *filename) {
         fatal("Could not key out file %s", filename);
     }
 }
+
+/* although this is some mad code duplication it makes the API sweet 
+   if i was some kind of psychopath I might just do this with macros.
+   however i am mentally sound. */
+void loadBackground(char *filename) {
+    loadCoreSurface(&s_background, filename);
+}
+
+void loadLeftChar(char *filename) {
+    loadCoreSurface(&s_charLeft, filename);
+}
+
+void loadCenterChar(char *filename) {
+    loadCoreSurface(&s_charCenter, filename);
+}
+
+void loadRightChar(char *filename) {
+    loadCoreSurface(&s_charRight, filename);
+}
+
