@@ -6,5 +6,9 @@
 
 int main(int argc, char **argv) {
     setupWindow();
+    clearWindow();
+    updateWindow();
+
+    clearSDL();
     return 0;
 }

@@ -7,11 +7,48 @@
 SDL_Surface *gsurface = NULL;
 SDL_Window *gwindow = NULL;
 
-/* linked list maintaining all currently active sprites */
-graphics_node_t *head;
+/* 
+   in Kansai, the window is split into 6 "core surfaces" in draw order top->bottom:
+     - an information / image display screen (think like Steins;Gate's image displays)
+     - the text window
+     - 3 on-screen characters and
+     - the background
+
+     **************************************
+     *                                    *
+     *                                    *
+     *            ************            *
+     *            *   INFO   *            *
+     *            * (behind) *            *
+     *   CLCLCL   *  CCCCCC  *   CRCRCR   *
+     *   CLCLCL   *  CCCCCC  *   CRCRCR   *
+     *            ************   CRCRCR   *
+     **************************************
+     *   TEXT TEXT TEXT TEXT TEXT TEXT    *
+     *   TEXT TEXT TEXT TEXT TEXT TEXT    *
+     *   TEXT TEXT TEXT TEXT TEXT TEXT    *
+     *                                    *
+     **************************************
+
+   
+   in the event that some section requires a custom section, it must be handled
+   inside of that scene and operate independently. This means all clean-up etc.
+   is NOT assumed unless it is using one of these 6 core surfaces.
+*/
+SDL_Surface *s_background;
+SDL_Surface *s_info;
+SDL_Surface *s_text;
+SDL_Surface *s_charLeft;
+SDL_Surface *s_charCenter;
+SDL_Surface *s_charRight;
 
 /* needs to be called prior to any other graphics calls */
 void setupWindow() {
+    /* setup SDL */
+    if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+        fatal("Could not start SDL.");
+    }
+    
     /* initialize the shared resources */
     gwindow = SDL_CreateWindow("Kansai",
                                    SDL_WINDOWPOS_UNDEFINED,
@@ -28,23 +65,31 @@ void setupWindow() {
     if (!gsurface) {
         fatal("Could not initialize window.");
     }
-
-    head = malloc(sizeof(graphics_node_t));
-    head->next = NULL;
-    head->sprite = NULL;
-    head->marked = 0; /* head is never marked */
+    s_background = NULL;
+    s_info = NULL;
+    s_text = NULL;
+    s_charLeft = NULL;
+    s_charCenter = NULL;
+    s_charRight = NULL;
 }
 
-inline void clearWindow() {
+void clearWindow() {
     CHECK_WINDOW;
     SDL_FillRect(gsurface,
                  NULL,
                  SDL_MapRGB(gsurface->format, 255, 255, 255));
 }
 
-inline void updateWindow() {
+void updateWindow() {
     CHECK_WINDOW;
     SDL_UpdateWindowSurface(gwindow);
+}
+
+/* perform SDL cleanup */
+void clearSDL() {
+    /* TODO: more advanced cleanup */
+    SDL_DestroyWindow(gwindow);
+    SDL_Quit();
 }
 
 void drawImage(char *filename, uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
@@ -77,31 +122,64 @@ void drawImage(char *filename, uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
     if (!sprite) {
         fatal("Could not key out file %s", filename);
     }
-
-    appendGraphicsNode(sprite);
     
     SDL_BlitSurface(sprite, &srcRect, gsurface, &destRect);
 }
 
+void drawCoreSurface(SDL_Surface *surface, uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
+    if (surface == NULL) return;
 
-void appendGraphicsNode(SDL_Surface *surface) {
-    graphics_node_t *curNode = head;
-    /* traverse the list to find the next free node */
-    while (curNode->next != NULL) {
-        /* whenever a new node is appended, cleanup the old ones */
-        if (curNode->next->marked) {
-            SDL_FreeSurface(curNode->next->sprite); /* clean up SDL's memory */
-            curNode->next = (curNode->next->next == NULL)
-                ? NULL
-                : curNode->next->next;
-            free(curNode->next); /* clean up our allocated memory */
-        }
-        curNode = curNode->next;
+    CHECK_WINDOW;
+
+    /* this entire code section is stupid easy to optimize just by passing around some context
+       but as implementation numero uno I've left this un-done. */
+    SDL_Rect srcRect;
+    SDL_Rect destRect;
+
+    srcRect.w = w;
+    srcRect.h = h;
+    srcRect.x = 0;
+    srcRect.y = 0;
+
+    destRect.w = w;
+    destRect.h = h;
+    destRect.x = x;
+    destRect.y = y;
+
+    SDL_BlitSurface(surface, &srcRect, gsurface, &destRect);
+}
+
+/* draw the core surfaces */
+void drawWindow() {
+    /* clear the window */
+    clearWindow();
+
+    drawCoreSurface(s_background, S_BACKGROUND_X, S_BACKGROUND_Y, WIDTH, HEIGHT);
+
+    drawCoreSurface(s_charLeft, S_CHAR_LEFT_X, S_CHAR_RIGHT_Y, S_CHAR_W, S_CHAR_H);
+    drawCoreSurface(s_charCenter, S_CHAR_CENTER_X, S_CHAR_CENTER_Y, S_CHAR_W, S_CHAR_H);
+    drawCoreSurface(s_charRight, S_CHAR_RIGHT_X, S_CHAR_RIGHT_Y, S_CHAR_W, S_CHAR_H);
+
+    drawCoreSurface(s_text, S_TEXT_X, S_TEXT_Y, S_TEXT_W, S_TEXT_H);
+
+    drawCoreSurface(s_info, S_INFO_X, S_INFO_Y, S_INFO_W, S_INFO_H);
+
+    /* redraw the window */
+    updateWindow();
+}
+
+void loadCoreSurface(SDL_Surface **sprite, char *filename) {
+    *sprite = SDL_LoadBMP(filename);
+
+    if (*sprite == NULL) {
+        fatal("Could not load image", filename);
     }
 
-    /* allocate the new current node */
-    curNode->next = malloc(sizeof(graphics_node_t));
-    curNode->next->sprite = surface;
-    curNode->next->marked = 0;
-    curNode->next->next = NULL;
+    /* key out white for background transparecy. */
+    SDL_SetColorKey(*sprite, SDL_TRUE,
+                    SDL_MapRGB((*sprite)->format, 255, 255, 255));
+
+    if (*sprite == NULL) {
+        fatal("Could not key out file %s", filename);
+    }
 }
