@@ -3,21 +3,25 @@
 #include <stdint.h>
 
 #include "graphics.h"
+#include "text.h"
 
 int main(int argc, char **argv) {
     setupWindow();
+    initText();
 
     int initTick;
     int running = 1;
     SDL_Event e;
 
+    loadBackground("./assets/img/bg0.png");
+    loadHud("./assets/img/hud.png");
+    loadLeftChar("./assets/img/mia.png");
+    drawText("TEST");
+
     /* main engine loop */
     while (running) {
         initTick = SDL_GetTicks(); // set the start time for the loop iteration
 
-        loadLeftChar("./assets/mia.bmp");
-
-        drawWindow();
         while(SDL_PollEvent(&e) != 0) {
             if(e.type == SDL_QUIT) {
                 running = 0;
@@ -31,6 +35,7 @@ int main(int argc, char **argv) {
         }
     }
 
+    cleanupText();
     clearSDL();
     return 0;
 }

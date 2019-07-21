@@ -1,9 +1,10 @@
 #include "log.h"
 #include "graphics.h"
+#include "text.h"
 
 #define CHECK_WINDOW if (gsurface == NULL || gsurface == NULL) { fatal("Window must be setup"); }
 
-/* global references to the Kansai window context */
+/* global references to the Kansai SDL context */
 SDL_Surface *gsurface = NULL;
 SDL_Window *gwindow = NULL;
 
@@ -38,6 +39,7 @@ SDL_Window *gwindow = NULL;
 SDL_Surface *s_background;
 SDL_Surface *s_info;
 SDL_Surface *s_text;
+SDL_Surface *s_hud;
 SDL_Surface *s_charLeft;
 SDL_Surface *s_charCenter;
 SDL_Surface *s_charRight;
@@ -47,6 +49,12 @@ void setupWindow() {
     /* setup SDL */
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         fatal("Could not start SDL.");
+    }
+
+    /* init sdl_img. For some wacky reason it returns a bitmask of currently
+       enabled stuff so we need to read the bitmask to see if PNG is initialized */
+    if ((!IMG_Init(IMG_INIT_PNG)) & IMG_INIT_PNG) {
+        fatal("Could not initialize PNG: %s", IMG_GetError());
     }
     
     /* initialize the shared resources */
@@ -156,10 +164,11 @@ void drawWindow() {
 
     drawCoreSurface(s_background, S_BACKGROUND_X, S_BACKGROUND_Y, WIDTH, HEIGHT);
 
-    drawCoreSurface(s_charLeft, S_CHAR_LEFT_X, S_CHAR_RIGHT_Y, S_CHAR_W, S_CHAR_H);
+    drawCoreSurface(s_charLeft, S_CHAR_LEFT_X, S_CHAR_LEFT_Y, S_CHAR_W, S_CHAR_H);
     drawCoreSurface(s_charCenter, S_CHAR_CENTER_X, S_CHAR_CENTER_Y, S_CHAR_W, S_CHAR_H);
     drawCoreSurface(s_charRight, S_CHAR_RIGHT_X, S_CHAR_RIGHT_Y, S_CHAR_W, S_CHAR_H);
 
+    drawCoreSurface(s_hud, S_HUD_X, S_HUD_Y, WIDTH, HEIGHT);
     drawCoreSurface(s_text, S_TEXT_X, S_TEXT_Y, S_TEXT_W, S_TEXT_H);
 
     drawCoreSurface(s_info, S_INFO_X, S_INFO_Y, S_INFO_W, S_INFO_H);
@@ -169,7 +178,7 @@ void drawWindow() {
 }
 
 void loadCoreSurface(SDL_Surface **sprite, char *filename) {
-    *sprite = SDL_LoadBMP(filename);
+    *sprite = IMG_Load(filename);
 
     if (*sprite == NULL) {
         fatal("Could not load image", filename);
@@ -182,6 +191,9 @@ void loadCoreSurface(SDL_Surface **sprite, char *filename) {
     if (*sprite == NULL) {
         fatal("Could not key out file %s", filename);
     }
+
+    /* redraw in order */
+    drawWindow();
 }
 
 /* although this is some mad code duplication it makes the API sweet 
@@ -189,6 +201,10 @@ void loadCoreSurface(SDL_Surface **sprite, char *filename) {
    however i am mentally sound. */
 void loadBackground(char *filename) {
     loadCoreSurface(&s_background, filename);
+}
+
+void loadHud(char *filename) {
+    loadCoreSurface(&s_hud, filename);
 }
 
 void loadLeftChar(char *filename) {
@@ -203,3 +219,7 @@ void loadRightChar(char *filename) {
     loadCoreSurface(&s_charRight, filename);
 }
 
+void drawText(char *text) {
+    SDL_Color black = {0,0,0};
+    s_text = renderText(text, black);
+}
