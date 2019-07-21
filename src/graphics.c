@@ -39,6 +39,7 @@ SDL_Window *gwindow = NULL;
 SDL_Surface *s_background;
 SDL_Surface *s_info;
 SDL_Surface *s_text;
+SDL_Surface *s_name;
 SDL_Surface *s_hud;
 SDL_Surface *s_charLeft;
 SDL_Surface *s_charCenter;
@@ -100,40 +101,6 @@ void clearSDL() {
     SDL_Quit();
 }
 
-void drawImage(char *filename, uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
-    CHECK_WINDOW;
-
-    SDL_Surface *sprite = NULL;
-    SDL_Rect srcRect;
-    SDL_Rect destRect;
-
-    srcRect.w = w;
-    srcRect.h = h;
-    srcRect.x = 0;
-    srcRect.y = 0;
-
-    destRect.w = w;
-    destRect.h = h;
-    destRect.x = x;
-    destRect.y = y;
-
-    sprite = SDL_LoadBMP(filename);
-
-    if (!sprite) {
-        fatal("Could not load image", filename);
-    }
-
-    /* key out white for background transparecy. */
-    SDL_SetColorKey(sprite, SDL_TRUE,
-                    SDL_MapRGB(sprite->format, 255, 255, 255));
-
-    if (!sprite) {
-        fatal("Could not key out file %s", filename);
-    }
-    
-    SDL_BlitSurface(sprite, &srcRect, gsurface, &destRect);
-}
-
 void drawCoreSurface(SDL_Surface *surface, uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
     if (surface == NULL) return;
 
@@ -169,6 +136,7 @@ void drawWindow() {
     drawCoreSurface(s_charRight, S_CHAR_RIGHT_X, S_CHAR_RIGHT_Y, S_CHAR_W, S_CHAR_H);
 
     drawCoreSurface(s_hud, S_HUD_X, S_HUD_Y, WIDTH, HEIGHT);
+    drawCoreSurface(s_name, S_NAME_X, S_NAME_Y, S_NAME_W, S_NAME_H);
     drawCoreSurface(s_text, S_TEXT_X, S_TEXT_Y, S_TEXT_W, S_TEXT_H);
 
     drawCoreSurface(s_info, S_INFO_X, S_INFO_Y, S_INFO_W, S_INFO_H);
@@ -219,7 +187,16 @@ void loadRightChar(char *filename) {
     loadCoreSurface(&s_charRight, filename);
 }
 
+void setName(char *name) {
+    SDL_Color black = {0,0,0};
+    s_name = renderText(name, black);
+
+    drawWindow();
+}
+
 void drawText(char *text) {
     SDL_Color black = {0,0,0};
     s_text = renderText(text, black);
+
+    drawWindow();
 }

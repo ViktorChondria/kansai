@@ -5,7 +5,7 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
-#define MAX_FRAMES 60
+#define MAX_FRAMES 30
 
 #define WIDTH 800
 #define HEIGHT 600
@@ -19,13 +19,18 @@
 #define S_INFO_W (WIDTH / 2)
 #define S_INFO_H (HEIGHT / 2)
 
-#define S_TEXT_X 0
-#define S_TEXT_Y 460 /* TODO */
+#define S_TEXT_X 50
+#define S_TEXT_Y 480 /* TODO */
 #define S_TEXT_W WIDTH
 #define S_TEXT_H S_TEXT_Y
 
+#define S_NAME_X 50
+#define S_NAME_Y 440
+#define S_NAME_W WIDTH
+#define S_NAME_H S_TEXT_Y
+
 #define S_CHAR_LEFT_X 200 /* TODO */
-#define S_CHAR_LEFT_Y -100
+#define S_CHAR_LEFT_Y 0
 
 #define S_CHAR_CENTER_X 0
 #define S_CHAR_CENTER_Y 0
@@ -37,7 +42,7 @@
 #define S_CHAR_H 600
 
 #define S_HUD_X 0
-#define S_HUD_Y 400
+#define S_HUD_Y 0
 
 
 void setupWindow();
@@ -55,6 +60,7 @@ void loadRightChar(char *filename);
 void loadCenterChar(char *filename);
 void loadLeftChar(char *filename);
 
+void setName(char *text);
 void drawText(char *text);
 
 

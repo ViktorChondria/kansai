@@ -16,15 +16,22 @@ int main(int argc, char **argv) {
     loadBackground("./assets/img/bg0.png");
     loadHud("./assets/img/hud.png");
     loadLeftChar("./assets/img/mia.png");
-    drawText("TEST");
+    setName("Mia");
+    drawText("\"This is test dialogue\"");
 
     /* main engine loop */
     while (running) {
         initTick = SDL_GetTicks(); // set the start time for the loop iteration
 
         while(SDL_PollEvent(&e) != 0) {
-            if(e.type == SDL_QUIT) {
+            switch(e.type) {
+            case SDL_QUIT:
                 running = 0;
+                break;
+            case SDL_KEYDOWN:
+                setName("Not Mia");
+                drawText("\"Someone else speaks.\"");
+                break;
             }
         }
 
